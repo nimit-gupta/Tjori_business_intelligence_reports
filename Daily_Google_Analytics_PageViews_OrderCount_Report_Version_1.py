@@ -32,7 +32,7 @@ conn = pg.connect( user = 'doadmin',
 
 def google_analytics_page_views(start_date, end_date):
     
-    sql = '''
+    sql_1 = '''
              select 
                   date::timestamp::date
 	             ,page_path
@@ -61,12 +61,12 @@ def google_analytics_page_views(start_date, end_date):
                   start_date,
                   end_date
                 )
-    df = pd.read_sql_query(sql, conn)
-    return df
+    df_1 = pd.read_sql_query(sql_1, conn)
+    return df_1
 
 def order_order(start_date, end_date):
     
-    sql_1 = '''
+    sql_2 = '''
               select 
                    soi.created::timestamp::date
 	              ,sp.sku
@@ -92,8 +92,77 @@ def order_order(start_date, end_date):
                   start_date,
                   end_date
                 )
-    df_1 = pd.read_sql_query(sql_1, conn)
-    return df_1
+    df_2 = pd.read_sql_query(sql_2, conn)
+    return df_2
+
+
+
+def google_analytics_page_views_clearance(start_date, end_date):
+    
+    sql_3 = '''
+             select 
+                  date::timestamp::date
+	             ,page_path
+	             ,product_id
+                 ,sp.sku
+	             ,sc.name
+	             ,sum(page_views) as page_views
+	             ,sum(unique_page_views) as unique_page_views
+             from 
+                 ga_union_pageviews as ga
+             left join
+                 store_product as sp on ga.product_id = sp.id
+             left join
+                 store_category as sc on sp.category_id = sc.id
+             where
+                 date >= '%s' and date < '%s'
+                 and sp.ribbon_id = 3
+             group by
+                 date
+	            ,page_path
+	            ,product_id
+                ,sp.sku
+	            ,sc.name
+             order by
+                date asc
+         ;''' % (
+                  start_date,
+                  end_date
+                )
+    df_3 = pd.read_sql_query(sql_3, conn)
+    return df_3
+
+def order_order_clearance(start_date, end_date):
+    
+    sql_4 = '''
+              select 
+                   soi.created::timestamp::date
+	              ,sp.sku
+	              ,sum(soi.quanity) as quanity
+              from 
+                  order_order as so
+              left join
+                  order_orderproduct as soi on so.id = soi.order_id
+              left join 
+                  store_product as sp on soi.product_id = sp.id
+              where 
+                  soi.created >= '%s' and soi.created < '%s'
+	              and so.status = 'confirmed'
+	              and so.email not like '%%@tjori.com%%'
+                  and sp.ribbon_id = 3
+              group by 
+                  soi.created
+	             ,sp.sku
+              order by
+                  soi.created asc
+
+	 
+         ;''' % (
+                  start_date,
+                  end_date
+                )
+    df_4 = pd.read_sql_query(sql_4, conn)
+    return df_4
 
 
 if __name__ == '__main__':
@@ -102,29 +171,25 @@ if __name__ == '__main__':
         fd = (datetime.datetime.now() - datetime.timedelta(1)).replace(day=1,hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M')
         ydb = (datetime.datetime.now() - datetime.timedelta(2)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M')
 
-df = google_analytics_page_views(fd, td)
-display(df)
+df_1 = google_analytics_page_views(fd, td)
+df_2 = order_order(fd, td)
+df_3 = google_analytics_page_views_clearance(fd, td)
+df_4 = order_order_clearance(fd, td)
 
 
-df_1 = order_order(fd, td)
-display(df_1)
+pivot_1 = pd.pivot_table(df_1, values = 'unique_page_views', index = 'sku', columns = 'date', aggfunc = np.sum, margins = True, margins_name = 'Total')
+pivot_2 = pd.pivot_table(df_2, values = 'quanity', index = 'sku', columns = 'created', aggfunc = np.sum, margins = True, margins_name = 'Total')
+pivot_3 = pd.pivot_table(df_3, values = 'unique_page_views', index = 'sku', columns = 'date', aggfunc = np.sum, margins = True, margins_name = 'Total')
+pivot_4 = pd.pivot_table(df_4, values = 'quanity', index = 'sku', columns = 'created', aggfunc = np.sum, margins = True, margins_name = 'Total')
 
-pivot = pd.pivot_table(df, values = 'page_views', index = 'sku', columns = 'date', aggfunc = np.sum, margins = True, margins_name = 'Total')
-display(pivot)
-
-pivot_1 = pd.pivot_table(df, values = 'unique_page_views', index = 'sku', columns = 'date', aggfunc = np.sum, margins = True, margins_name = 'Total')
-display(pivot_1)
-
-pivot_2 = pd.pivot_table(df_1, values = 'quanity', index = 'sku', columns = 'created', aggfunc = np.sum, margins = True, margins_name = 'Total')
-display(pivot_2)
-
-all_data = pd.merge(pivot_1, pivot_2, on = 'sku', how = 'left', suffixes = ('_pageviews','_quanity'))
-display(all_data)
+all_data_1 = pd.merge(pivot_1, pivot_2, on = 'sku', how = 'left', suffixes = ('_pageviews','_quanity'))
+all_data_2 = pd.merge(pivot_3, pivot_4, on = 'sku', how = 'left', suffixes = ('_pageviews','_quanity'))
 
 
 def write_to_excel():
     writer = pd.ExcelWriter('C://Users//sachi//OneDrive//Desktop//Google_Analytics_Pageviews_List.xlsx', engine='xlsxwriter')
-    all_data.to_excel(writer, sheet_name = 'Unique_Pageviews_Order_Report')
+    all_data_1.to_excel(writer, sheet_name = 'PageviewsOrderReport')
+    all_data_2.to_excel(writer, sheet_name = 'PageviewsClearanceOrderReport')
     writer.save()
     
    
@@ -181,7 +246,7 @@ def main():
 
 if __name__ == '__main__':
     main()
-        
+       
 
 
 # In[ ]:
