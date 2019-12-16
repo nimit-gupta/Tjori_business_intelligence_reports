@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[4]:
 
 
 import psycopg2 as ps
@@ -27,13 +27,15 @@ def daily_order_product_list(start_date, end_date):
     sql = '''
           SELECT
       so.invoice_id AS invoice_id
-     ,so.created::timestamp::date AS created
+     ,soi.created::timestamp::date AS created
      ,so.status AS status
      ,CASE WHEN so.payment_method = '1' THEN 'Paytm'
            WHEN so.payment_method = '2' THEN 'PayU'
-			  WHEN so.payment_method = '3' THEN 'Cash on Delivery' 
+		   WHEN so.payment_method = '3' THEN 'Cash on Delivery' 
            WHEN so.payment_method = '4' THEN 'PayPal' 
-           WHEN so.payment_method = '10'THEN 'Mobiqwik' END AS payment_methods
+           WHEN so.payment_method = '10'THEN 'Mobiqwik'
+           WHEN so.payment_method NOT IN ('1','2','3','4','10') THEN 'Others'
+      END AS payment_methods
      ,so.email AS customer_email
      ,so.first_name AS customer_first_name
      ,so.last_name AS customer_last_name
@@ -56,8 +58,11 @@ def daily_order_product_list(start_date, end_date):
      ,sp.special_price AS current_product_special_price
      ,soi.removed AS removed
      ,so.currency AS order_currency
+     ,so.coupon
      ,sc.name AS category
      ,string_agg( distinct concat(os.way_bill_number),'  ,') AS way_bill_number
+     ,so.utm_source
+     ,so.utm_medium
      ,sp.cost_price
      ,soi.in_process AS in_process
      ,hsn.tax
@@ -79,12 +84,12 @@ LEFT JOIN
    tms_hsncode AS hsn ON sp.hsncode_id = hsn.id
    
 WHERE
-    so.created >= '%s'
-    AND so.created < '%s'
+    soi.created >= '%s'
+    AND soi.created < '%s'
     AND so.status = 'confirmed'
 GROUP BY
       so.invoice_id 
-     ,so.created 
+     ,soi.created 
      ,so.status 
      ,payment_methods
      ,so.email 
@@ -109,7 +114,10 @@ GROUP BY
      ,sp.special_price 
      ,soi.removed 
      ,so.currency
+     ,so.coupon
      ,sc.name 
+     ,so.utm_source
+     ,so.utm_medium
      ,sp.cost_price
      ,soi.in_process 
      ,hsn.tax
@@ -118,7 +126,7 @@ GROUP BY
      ,soi.delivered 
      ,soi.exchanged 
 ORDER BY
-     so.created asc
+     soi.created asc
     
 ;
 ''' % (
@@ -136,7 +144,7 @@ if __name__=='__main__':
 
 
 df = daily_order_product_list(fd,td)
-display(df)
+
 
 def write_to_excel():
     writer = pd.ExcelWriter('C://Users//sachi//OneDrive//Desktop//Daily_Order_Product_List.xlsx', engine='xlsxwriter')
@@ -145,23 +153,24 @@ def write_to_excel():
     
 def send_email():
     sender = "nimit@tjori.com"
-    recievers = ["nimit@tjori.com",
-                 "ankit@tjori.com",
-                 "mansi@tjori.com",
-                 "mkindra@tjori.com",
-                 "poonam@tjori.com",
-                 "pavitra@tjori.com",
-                 "shubhangi@tjori.com",
-                 "shruti@tjori.com",
-                 "sabhyata@tjori.com",
-                 "akanksha@tjori.com",
-                 "geetika@tjori.com",
-                 "nikita@tjori.com",
-                 "hanisha@tjori.com",
-                 "farhan@tjori.com",
-                 "hemant@tjori.com",
-                 "accounts@tjori.com",
-                 "shiv@tjori.com"
+    recievers = [ "nimit@tjori.com",
+                  "ankit@tjori.com",
+                  "mansi@tjori.com",
+                  "mkindra@tjori.com",
+                  "poonam@tjori.com",
+                  "pavitra@tjori.com",
+                  "shubhangi@tjori.com",
+                  "shruti@tjori.com",
+                  "sabhyata@tjori.com",
+                  "akanksha@tjori.com",
+                  "geetika@tjori.com",
+                  "nikita@tjori.com",
+                  "hanisha@tjori.com",
+                  "farhan@tjori.com",
+                  "hemant@tjori.com",
+                  "accounts@tjori.com",
+                  "shiv@tjori.com",
+                  "pooja@tjori.com"
                  ]
     # Create message container 
     
