@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[7]:
 
 
 # Importing libraries
@@ -25,58 +25,48 @@ conn = ps.connect(user = 'nimit_new', password = 'nimit@tjori@123', host = '103.
 
 def clearance_sales(startdate, enddate):
     
-    sql = '''SELECT
-                  DATE(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') AS order_date
-                 ,soi.order_id	 
-                 ,catalog.sku
-                 ,category.name
-                 ,(case
-                       WHEN so.currency = 'USD' THEN 
-                           (CASE 
-                               WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                           END)
-			           WHEN so.currency = 'INR' THEN  
-			               (CASE 
-			                   WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100)
-                           END) 
-			       END) AS revenue
-                 ,soi.quanity AS quantity
-                 ,ribbon.id
-                 ,ribbon.creative_text
-             FROM 
+    sql = '''
+           SELECT
+             DATE(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') AS order_date
+            ,soi.order_id	 
+            ,catalog.sku
+            ,category.name
+            ,CASE
+                WHEN so.currency = 'USD' THEN 
+			       CASE 
+				      WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) <= 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax_under999::integer)/100)),2)
+                      WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) > 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax::integer)/100)),2)
+                   END 
+                WHEN so.currency = 'INR' THEN 
+			       CASE 
+				      WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) <= 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax_under999::integer)/100)),2)
+                      WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) > 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax::integer)/100)),2)
+	               END
+		      END AS revenue
+             ,soi.quanity AS quantity
+             ,ribbon.id
+             ,ribbon.creative_text
+            FROM 
                 order_orderproduct soi
-             LEFT JOIN 
+            LEFT JOIN 
                 order_order so ON so.id = soi.order_id
-             LEFT JOIN 
+            LEFT JOIN 
                 store_product catalog ON soi.product_id = catalog.id   
-             LEFT JOIN 
+            LEFT JOIN 
                 store_ribbon ribbon ON catalog.ribbon_id = ribbon.id
-             LEFT JOIN 
+            LEFT JOIN 
                 store_category category ON catalog.category_id = category.id
-             LEFT JOIN 
+            LEFT JOIN 
                 tms_hsncode AS hsn ON catalog.hsncode_id = hsn.id
-             WHERE 
-              ribbon.id = 3 AND 
+            WHERE 
               so.status = 'confirmed' AND
+              ribbon.id = 3 AND 
               date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') >= '%s' AND
-              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s'
-             GROUP BY
+              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s' AND
+              soi.removed = False AND
+              soi.returned = False AND
+              soi.exchanged = False 
+            GROUP BY
               order_date
              ,hsn.tax
              ,soi.price
@@ -88,7 +78,7 @@ def clearance_sales(startdate, enddate):
              ,ribbon.creative_text
              ,soi.order_id
              ,so.currency
-
+             ,hsn.tax_under999
 ;
 
 ''' % (
@@ -101,37 +91,24 @@ def clearance_sales(startdate, enddate):
 
 def non_clearance_sales(startdate, enddate):
     
-    sql1 = '''SELECT
-                  DATE(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') AS order_date
-                 ,soi.order_id	 
-                 ,catalog.sku
-                 ,category.name
-                 ,(case
-                       WHEN so.currency = 'USD' THEN 
-                           (CASE 
-                               WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                           END)
-			           WHEN so.currency = 'INR' THEN  
-			               (CASE 
-			                   WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                           END) 
-			       END) AS revenue
+    sql1 = '''
+            SELECT
+                DATE(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') AS order_date
+                ,soi.order_id	 
+                ,catalog.sku
+                ,category.name
+                ,CASE
+                     WHEN so.currency = 'USD' THEN 
+			             CASE 
+				            WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) <= 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax_under999::integer)/100)),2)
+                            WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) > 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax::integer)/100)),2)
+                         END 
+                     WHEN so.currency = 'INR' THEN 
+			             CASE 
+				            WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) <= 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax_under999::integer)/100)),2)
+                            WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) > 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax::integer)/100)),2)
+	                  END
+		          END AS revenue
                  ,soi.quanity AS quantity
                  ,ribbon.id
                  ,ribbon.creative_text
@@ -147,12 +124,15 @@ def non_clearance_sales(startdate, enddate):
                 store_category category ON catalog.category_id = category.id
              LEFT JOIN 
                 tms_hsncode AS hsn ON catalog.hsncode_id = hsn.id
-             WHERE 
-                ribbon.id IS DISTINCT FROM 3 AND 
-                so.status = 'confirmed' AND
-                date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') >= '%s' AND
-                date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s'
-             GROUP BY
+            WHERE 
+              so.status = 'confirmed' AND
+              ribbon.id IS DISTINCT FROM 3 AND 
+              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') >= '%s' AND
+              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s' AND
+              soi.removed = False AND
+              soi.returned = False AND
+              soi.exchanged = False 
+            GROUP BY
               order_date
              ,hsn.tax
              ,soi.price
@@ -164,50 +144,37 @@ def non_clearance_sales(startdate, enddate):
              ,ribbon.creative_text
              ,soi.order_id
              ,so.currency
+             ,hsn.tax_under999
+          ;
 
-;
-
-''' % (
-       startdate,
-       enddate  
-      )
+          ''' % (
+                 startdate,
+                 enddate  
+                )
     
     df2 = pd.read_sql_query(sql1, conn)
     return df2
 
 def total_sales(startdate, enddate):
     
-    sql2 = '''SELECT
+    sql2 = '''
+            SELECT
                   DATE(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') AS order_date
                  ,soi.order_id	 
                  ,catalog.sku
                  ,category.name
-                 ,(case
-                       WHEN so.currency = 'USD' THEN 
-                           (CASE 
-                               WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity*70) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity*70) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                           END)
-			           WHEN so.currency = 'INR' THEN  
-			               (CASE 
-			                   WHEN category.name = 'Apparel' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Footwear' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Bags' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Jewelry' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Home & Decor' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-                               WHEN category.name = 'Wellness' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Accessories' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Mother & Child' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100) 
-			                   WHEN category.name = 'Men' THEN ((soi.price*soi.quanity) - coalesce(soi.discount,0)) - round((((soi.price*soi.quanity) - coalesce(soi.discount,0))*hsn.tax::integer)/100)
-                           END) 
-			       END) AS revenue
+                 ,CASE
+                     WHEN so.currency = 'USD' THEN 
+			            CASE 
+				           WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) <= 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax_under999::integer)/100)),2)
+                           WHEN (((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) > 999 THEN ROUND(((((soi.quanity * soi.price)*70) - (COALESCE(soi.discount, 0)*70)) - (((((soi.quanity * soi.price)*70) - (coalesce(soi.discount, 0) *70))*hsn.tax::integer)/100)),2)
+                        END 
+                      WHEN so.currency = 'INR' THEN 
+			             CASE 
+				            WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) <= 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax_under999::integer)/100)),2)
+                            WHEN ((soi.quanity * soi.price) - coalesce(soi.discount,0)) > 999 THEN ROUND((((soi.quanity * soi.price) - coalesce(soi.discount,0)) - ((((soi.quanity * soi.price) - coalesce(soi.discount,0))*hsn.tax::integer)/100)),2)
+	                  END
+		          END AS revenue
                  ,soi.quanity AS quantity
                  ,ribbon.id
                  ,ribbon.creative_text
@@ -226,7 +193,10 @@ def total_sales(startdate, enddate):
             WHERE 
               so.status = 'confirmed' AND
               date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') >= '%s' AND
-              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s'
+              date(soi.created::TIMESTAMP AT TIME ZONE 'utc' AT TIME ZONE 'asia/kolkata') < '%s' AND
+              soi.removed = False AND
+              soi.returned = False AND
+              soi.exchanged = False 
             GROUP BY
               order_date
              ,hsn.tax
@@ -239,13 +209,13 @@ def total_sales(startdate, enddate):
              ,ribbon.creative_text
              ,soi.order_id
              ,so.currency
+             ,hsn.tax_under999
+          ;
 
-;
-
-''' % (
-       startdate,
-       enddate  
-      )
+          ''' % (
+                 startdate,
+                 enddate  
+                 )
     
     df3 = pd.read_sql_query(sql2, conn)
     return df3
@@ -1414,12 +1384,14 @@ y33y33y33y33 = format(int(y3y3y3y3),",d")
 # Initiating the STMP
 
 sender = "nimit@tjori.com"
-recievers = ["nimit@tjori.com",
-             "ankit@tjori.com",
-             "mansi@tjori.com",
-             "poonam@tjori.com",
-             "shiv@tjori.com"
-             ]
+recievers = [
+               "nimit@tjori.com"
+              ,"ankit@tjori.com"
+              ,"mansi@tjori.com"
+              ,"poonam@tjori.com"
+              ,"shiv@tjori.com"
+              ,"anand@tjori.com"
+            ]
 
 # Create message container - 
 msg = MIMEMultipart('alternative')
